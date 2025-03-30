@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:schoolcalendar/provider/subject_provider.dart';
 import '../../data/models/subject.dart';
 import '../../data/models/task.dart';
 import '../widgets/subject_card.dart';
@@ -35,16 +37,21 @@ class HomeScreen extends StatelessWidget {
       ),
     ];
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Školní kalendář')),
-      body: ListView(
-        padding: const EdgeInsets.all(8),
-        children:
-            subjects.map((subject) {
-              final subjectTasks =
-                  tasks.where((task) => task.subjectId == subject.id).toList();
-              return SubjectCard(subject: subject, tasks: subjectTasks);
-            }).toList(),
+    return MultiProvider(
+      providers: [Provider<SubjectProvider>(create: (_) => SubjectProvider())],
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Školní kalendář')),
+        body: ListView(
+          padding: const EdgeInsets.all(8),
+          children:
+              subjects.map((subject) {
+                final subjectTasks =
+                    tasks
+                        .where((task) => task.subjectId == subject.id)
+                        .toList();
+                return SubjectCard(subject: subject, tasks: subjectTasks);
+              }).toList(),
+        ),
       ),
     );
   }
