@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../data/models/subject.dart';
-import '../../data/models/task.dart';
+import 'package:schoolcalendar/data/db/database.dart';
 import 'task_item.dart';
 import 'package:intl/intl.dart';
 

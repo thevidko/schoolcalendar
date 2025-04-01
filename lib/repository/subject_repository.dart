@@ -14,4 +14,23 @@ class SubjectRepository {
       return [];
     }
   }
+
+  Future<Subject?> getSubjectById(int id) async {
+    try {
+      return await (db.select(db.subjects)
+        ..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+    } catch (e) {
+      log(e.toString());
+      return null;
+    }
+  }
+
+  Future<void> addNewSubject(SubjectsCompanion subject) async {
+    try {
+      await db.into(db.subjects).insert(subject);
+      log('Subject added successfully: ${subject.name}');
+    } catch (e) {
+      log('Failed to add subject: ${e.toString()}');
+    }
+  }
 }

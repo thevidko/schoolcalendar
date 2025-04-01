@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../data/models/task.dart';
 import 'package:intl/intl.dart';
+import 'package:schoolcalendar/data/db/database.dart';
 
 class TaskItem extends StatelessWidget {
   final Task task;

@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:schoolcalendar/locator.dart';
+import 'package:schoolcalendar/presentation/screens/subjects_screen.dart';
+import 'package:schoolcalendar/provider/subject_provider.dart';
 import 'data/models/subject.dart';
 import 'data/models/task.dart';
 import 'presentation/screens/home_screen.dart';
 
 void main() {
-  runApp(const SchoolCalendarApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<SubjectProvider>(
+          create: (_) => SubjectProvider(),
+        ),
+      ],
+      child: SchoolCalendarApp(),
+    ),
+  );
   setUp();
 }
 
@@ -18,7 +30,7 @@ class SchoolCalendarApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Školní kalendář',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomeScreen(),
+      home: const SubjectsScreen(),
     );
   }
 }
