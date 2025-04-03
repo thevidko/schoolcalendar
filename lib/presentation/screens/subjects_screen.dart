@@ -29,6 +29,7 @@ class SubjectsScreen extends StatelessWidget {
             itemCount: subjectProvider.allSubjects.length,
             itemBuilder: (_, index) {
               return SubjectCard(
+                //TODO TASKPROVIDER BUILD DO POLE TASK, SELECT ALLTASKSBYSUBJECTID
                 subject: subjectProvider.allSubjects[index],
                 tasks: [],
               );

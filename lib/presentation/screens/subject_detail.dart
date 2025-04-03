@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:schoolcalendar/presentation/screens/add_task.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
 
 class SubjectDetailScreen extends StatelessWidget {
@@ -38,6 +39,15 @@ class SubjectDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AddTaskScreen()),
+          );
+        },
+        child: Icon(Icons.add),
+      ),
       appBar: AppBar(
         title: Text("Detail předmětu"),
         actions: [
