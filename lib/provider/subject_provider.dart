@@ -10,10 +10,18 @@ class SubjectProvider extends ChangeNotifier {
 
   SubjectRepository _subjectRepository = SubjectRepository();
   List<Subject> _allSubjects = [];
+  Subject? _selectedSubject;
+
   List<Subject> get allSubjects => _allSubjects;
+  Subject? get selectedSubject => _selectedSubject;
 
   getAllSubjects() async {
     _allSubjects = await _subjectRepository.getAllSubjects();
+    notifyListeners();
+  }
+
+  Future<void> getSubjectById(int id) async {
+    _selectedSubject = await _subjectRepository.getSubjectById(id);
     notifyListeners();
   }
 
@@ -24,7 +32,7 @@ class SubjectProvider extends ChangeNotifier {
   }
 
   deleteSubject(int id) async {
-    //await _subjectRepository.deleteSubject(id);
+    await _subjectRepository.deleteSubject(id);
     getAllSubjects();
   }
 }

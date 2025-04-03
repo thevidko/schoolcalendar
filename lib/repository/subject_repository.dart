@@ -33,4 +33,13 @@ class SubjectRepository {
       log('Failed to add subject: ${e.toString()}');
     }
   }
+
+  Future<void> deleteSubject(int id) async {
+    try {
+      await (db.delete(db.subjects)..where((tbl) => tbl.id.equals(id))).go();
+      log('Subject deleted successfully: ID $id');
+    } catch (e) {
+      log('Failed to delete subject: ${e.toString()}');
+    }
+  }
 }
