@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:schoolcalendar/presentation/screens/add_subject.dart';
 import 'package:schoolcalendar/presentation/widgets/subject_card.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
+import 'package:schoolcalendar/provider/task_provider.dart';
 
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
@@ -20,19 +21,24 @@ class SubjectsScreen extends StatelessWidget {
         child: Icon(Icons.add),
       ),
       appBar: AppBar(title: Text("Předměty")),
-      body: Consumer<SubjectProvider>(
-        builder: (_, subjectProvider, __) {
-          if (subjectProvider.allSubjects.isEmpty) {
+      body: Consumer2<SubjectProvider, TaskProvider>(
+        builder: (_, subjectProvider, taskProvider, __) {
+          final subjects = subjectProvider.allSubjects;
+
+          if (subjects.isEmpty) {
             return Center(child: Text("Žádné předměty"));
           }
+
           return ListView.builder(
-            itemCount: subjectProvider.allSubjects.length,
+            itemCount: subjects.length,
             itemBuilder: (_, index) {
-              return SubjectCard(
-                //TODO TASKPROVIDER BUILD DO POLE TASK, SELECT ALLTASKSBYSUBJECTID
-                subject: subjectProvider.allSubjects[index],
-                tasks: [],
-              );
+              final subject = subjects[index];
+              final tasks =
+                  taskProvider.allTasks
+                      .where((task) => task.subjectId == subject.id)
+                      .toList();
+
+              return SubjectCard(subject: subject, tasks: tasks);
             },
           );
         },

@@ -16,6 +16,16 @@ class TaskRepository {
     }
   }
 
+  Future<List<Task>> getTasksBySubjectId(int subjectId) async {
+    try {
+      return await (db.select(db.tasks)
+        ..where((tbl) => tbl.subjectId.equals(subjectId))).get();
+    } catch (e) {
+      log('Failed to load tasks by subject ID: $e');
+      return [];
+    }
+  }
+
   Future<void> addNewTask(TasksCompanion task) async {
     try {
       await db.into(db.tasks).insert(task);

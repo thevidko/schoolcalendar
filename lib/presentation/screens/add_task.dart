@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart' as db;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:schoolcalendar/data/db/database.dart';
+import 'package:schoolcalendar/provider/task_provider.dart';
 import 'package:schoolcalendar/repository/task_repository.dart';
 import 'package:schoolcalendar/repository/subject_repository.dart';
 
@@ -122,7 +124,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       dueDate: db.Value(_dueDate!),
                       isCompleted: db.Value(_isCompleted),
                     );
-                    await TaskRepository().addNewTask(newTask);
+                    await Provider.of<TaskProvider>(
+                      context,
+                      listen: false,
+                    ).addTask(newTask);
                     Navigator.pop(context);
                   }
                 },

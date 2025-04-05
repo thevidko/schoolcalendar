@@ -87,19 +87,33 @@ class SubjectDetailScreen extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  subject.name,
-                  style: Theme.of(context).textTheme.headlineLarge,
+            child: Card(
+              elevation: 4, // Přidání stínu pro lepší vizuální efekt
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12), // Zaoblení rohů
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0), // Vnitřní odsazení
+                child: Column(
+                  mainAxisAlignment:
+                      MainAxisAlignment.center, // Zarovnání na střed
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center, // Zarovnání na střed
+                  children: [
+                    Text(
+                      subject.name,
+                      textAlign: TextAlign.center, // Text zarovnaný na střed
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      subject.code,
+                      textAlign: TextAlign.center, // Text zarovnaný na střed
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  subject.code,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ],
+              ),
             ),
           );
         },

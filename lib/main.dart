@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:schoolcalendar/locator.dart';
 import 'package:schoolcalendar/presentation/screens/subjects_screen.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
+import 'package:schoolcalendar/provider/task_provider.dart';
 import 'data/models/subject.dart';
 import 'data/models/task.dart';
 import 'presentation/screens/home_screen.dart';
@@ -14,6 +15,7 @@ void main() {
         ChangeNotifierProvider<SubjectProvider>(
           create: (_) => SubjectProvider(),
         ),
+        ChangeNotifierProvider<TaskProvider>(create: (_) => TaskProvider()),
       ],
       child: SchoolCalendarApp(),
     ),
