@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:schoolcalendar/locator.dart';
 import 'package:schoolcalendar/presentation/screens/subjects_screen.dart';
+import 'package:schoolcalendar/presentation/theme/theme.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
 import 'package:schoolcalendar/provider/task_provider.dart';
 import 'data/models/subject.dart';
@@ -31,7 +32,7 @@ class SchoolCalendarApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Školní kalendář',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: buildTheme(),
       home: const SubjectsScreen(),
     );
   }

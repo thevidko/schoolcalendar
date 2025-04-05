@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' as db;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:schoolcalendar/data/db/database.dart';
 import 'package:schoolcalendar/provider/task_provider.dart';
@@ -21,6 +22,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   DateTime? _dueDate;
   final bool _isCompleted = false;
   List<Subject> _subjects = [];
+  String formattedDate = "";
 
   @override
   void initState() {
@@ -37,16 +39,36 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Future<void> _pickDueDate() async {
+    // Nejprve vybereme datum
     DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
+
     if (pickedDate != null) {
-      setState(() {
-        _dueDate = pickedDate;
-      });
+      // Poté vybereme čas
+      TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(
+          DateTime.now(),
+        ), // Nastavení aktuálního času jako výchozího
+      );
+
+      if (pickedTime != null) {
+        // Kombinujeme vybrané datum a čas
+        setState(() {
+          _dueDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+          formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(_dueDate!);
+        });
+      }
     }
   }
 
@@ -63,7 +85,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               TextFormField(
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return "Kód nemůže být prázdný";
+                    return "Pole nemůže být prázdný";
                   }
                   return null;
                 },
@@ -106,7 +128,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       child: Text(
                         _dueDate == null
                             ? "Vybrat datum"
-                            : "Datum: ${_dueDate!.toLocal()}", //TODO České datum
+                            : "Datum: ${formattedDate}", //TODO České datum
                       ),
                     ),
                   ),

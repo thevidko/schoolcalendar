@@ -16,42 +16,34 @@ class SubjectCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SubjectDetailScreen(subjectId: subject.id),
+            builder:
+                (context) =>
+                    SubjectDetailScreen(subjectIdString: subject.id.toString()),
           ),
         );
       },
       child: Card(
-        elevation: 4,
-        margin: const EdgeInsets.symmetric(
-          vertical: 8,
-          horizontal: 16,
-        ), // Added horizontal margin
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // Rounded corners
-        ),
+        elevation: 2,
+        color: Color.fromARGB(255, 59, 59, 59),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
-          padding: const EdgeInsets.all(
-            16,
-          ), // Increased padding for better spacing
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 '${subject.name} (${subject.code})',
                 style: const TextStyle(
-                  fontSize: 20, // Slightly larger font size
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87, // Darker text color
                 ),
               ),
               const SizedBox(height: 8),
               if (tasks.isEmpty)
                 const Text(
                   'Žádné nadcházející termíny.',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14, // Slightly smaller font size for subtler text
-                  ),
+                  style: TextStyle(fontSize: 14),
                 )
               else
                 Column(
