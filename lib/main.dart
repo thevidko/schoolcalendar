@@ -5,9 +5,6 @@ import 'package:schoolcalendar/presentation/screens/subjects_screen.dart';
 import 'package:schoolcalendar/presentation/theme/theme.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
 import 'package:schoolcalendar/provider/task_provider.dart';
-import 'data/models/subject.dart';
-import 'data/models/task.dart';
-import 'presentation/screens/home_screen.dart';
 
 void main() {
   runApp(
