@@ -115,25 +115,36 @@ class TaskItemDetail extends StatelessWidget {
       },
       // onDismissed se zavolá POUZE pokud confirmDismiss vrátil true
       onDismissed: (direction) {
-        if (task.isCompleted) {
-          // Akce smazání (uživatel potvrdil v dialogu)
-          taskProvider.deleteTask(task.id);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Úkol "${task.title}" smazán.'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        } else {
-          // Akce označení jako splněno
-          taskProvider.updateTaskCompletion(task.id, true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Úkol "${task.title}" označen jako splněný.'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        // Zobrazíme Snackbar hned
+        final String message =
+            task.isCompleted
+                ? 'Úkol "${task.title}" smazán.'
+                : 'Úkol "${task.title}" označen jako splněný.';
+        ScaffoldMessenger.of(
+          context,
+        ).removeCurrentSnackBar(); // Odstraní případný předchozí snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // --- ZMĚNA ZDE: Použití Future.delayed(Duration.zero) ---
+        Future.delayed(Duration.zero, () {
+          // Zkontrolujeme, zda je widget stále připojený (mounted),
+          // i když by při tomto krátkém zpoždění měl být.
+          if (context.mounted) {
+            if (task.isCompleted) {
+              // Akce smazání
+              taskProvider.deleteTask(task.id);
+            } else {
+              // Akce označení jako splněno
+              taskProvider.updateTaskCompletion(task.id, true);
+            }
+          }
+        });
+        // --- KONEC ZMĚNY ---
       },
       child: ListTile(
         // contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),

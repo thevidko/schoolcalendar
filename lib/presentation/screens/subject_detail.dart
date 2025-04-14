@@ -274,50 +274,63 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   const SizedBox(height: 24), // Větší mezera
                   // 2. Sekce nesplněných úkolů
                   if (uncompletedTasks.isNotEmpty) ...[
-                    // Použití spread operatoru
                     Text(
                       "Nesplněné termíny (${uncompletedTasks.length})",
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
-                    Column(
-                      children:
-                          uncompletedTasks
-                              .map(
-                                (task) => TaskItemDetail(
-                                  key: ValueKey(task.id),
-                                  task: task,
-                                ),
-                              )
-                              .toList(),
-                    ),
-                    const SizedBox(height: 24), // Mezera mezi sekcemi
                   ],
 
-                  // 3. Sekce splněných úkolů
+                  // 2b. Column pro nesplněné úkoly VYKRESLÍME VŽDY,
+                  //     ale její obsah bude generován jen pokud seznam není prázdný.
+                  //     Tím zajistíme, že Column existuje, i když se seznam vyprázdní.
+                  Column(
+                    children:
+                        uncompletedTasks // Podmíněně mapujeme obsah
+                            .map(
+                              (task) => TaskItemDetail(
+                                key: ValueKey(task.id), // Klíč je zde důležitý
+                                task: task,
+                              ),
+                            )
+                            .toList(), // Pokud je uncompletedTasks prázdný, výsledkem je prázdný List<Widget>
+                  ),
+
+                  // 2c. Mezera mezi sekcemi (můžeme ji nechat fixní nebo podmíněnou)
+                  //     Nechme ji zde pro konzistentní vzhled.
+                  const SizedBox(height: 24),
+
+                  // --- KONEC ZMĚNY V SEKCI NESPLNĚNÝCH ÚKOLŮ ---
+
+                  // 3. Sekce splněných úkolů (můžeme použít stejný princip)
+
+                  // 3a. Nadpis jen pokud jsou splněné úkoly
                   if (completedTasks.isNotEmpty) ...[
                     Text(
                       "Splněné termíny (${completedTasks.length})",
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.grey,
-                      ), // Odlišení barvou
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
-                    Column(
-                      children:
-                          completedTasks
-                              .map(
-                                (task) => TaskItemDetail(
-                                  key: ValueKey(task.id),
-                                  task: task,
-                                ),
-                              )
-                              .toList(),
-                    ),
                   ],
 
-                  // 4. Zpráva, pokud nejsou žádné úkoly
-                  if (uncompletedTasks.isEmpty && completedTasks.isEmpty)
+                  // 3b. Column pro splněné úkoly vykreslíme vždy
+                  Column(
+                    children:
+                        completedTasks
+                            .map(
+                              (task) => TaskItemDetail(
+                                key: ValueKey(task.id),
+                                task: task,
+                              ),
+                            )
+                            .toList(),
+                  ),
+
+                  // 4. Zpráva, pokud nejsou žádné úkoly celkem
+                  if (subjectTasks
+                      .isEmpty) // Můžeme použít subjectTasks, je to jednodušší
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 20.0),

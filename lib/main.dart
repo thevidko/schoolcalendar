@@ -29,7 +29,7 @@ class SchoolCalendarApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Školní kalendář',
-      theme: buildTheme(),
+      theme: buildDarkBlueTheme(),
       home: const SubjectsScreen(),
     );
   }
