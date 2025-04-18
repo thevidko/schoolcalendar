@@ -23,8 +23,9 @@ class SubjectCard extends StatelessWidget {
         );
       },
       child: Card(
-        elevation: 2,
-        color: Color.fromARGB(255, 59, 59, 59),
+        elevation: 10,
+        //color: Color(0xFFFFF8F8),
+        //color: Color.fromARGB(255, 59, 59, 59),
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(

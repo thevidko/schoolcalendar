@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:schoolcalendar/data/api/stag_api_service.dart';
 import 'package:schoolcalendar/data/db/database.dart';
 import 'package:schoolcalendar/data/models/stag_subject_model.dart';
 import 'package:schoolcalendar/presentation/screens/add_subject.dart';
+import 'package:schoolcalendar/presentation/screens/settings.dart';
 import 'package:schoolcalendar/presentation/screens/stag_login.dart';
 import 'package:schoolcalendar/presentation/widgets/subject_card.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
@@ -143,6 +145,12 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     }
   }
 
+  String _getFormattedDate() {
+    final now = DateTime.now();
+    final formatter = DateFormat('EEEE, d. MMMM yyyy', 'cs_CZ');
+    return formatter.format(now);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,7 +164,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         child: Icon(Icons.add),
       ),
       appBar: AppBar(
-        title: Text("Předměty"),
+        title: Text("EduPlanner"),
         actions: [
           if (_isImporting)
             const Padding(
@@ -192,6 +200,16 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     );
                   }
                 });
+              } else if (value == 'settings') {
+                print('Vybrána položka Nastavení'); // Pro kontrolu v konzoli
+                // Zde přidejte navigaci na vaši obrazovku nastavení
+                // Předpokládáme, že máte obrazovku s názvem SettingsScreen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SettingsScreen(),
+                  ), // Vytvořte si SettingsScreen
+                );
               }
               // Nastavení  ?
               // else if (value == 'settings') { ... }
@@ -202,8 +220,10 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     value: 'import_stag',
                     child: Text('Import ze STAG'),
                   ),
-                  //další položky menu podle potřeby
-                  // const PopupMenuItem(value: 'settings', child: Text('Nastavení')),
+                  const PopupMenuItem(
+                    value: 'settings', // Unikátní hodnota pro tuto položku
+                    child: Text('Nastavení'), // Zobrazený text
+                  ),
                 ],
             icon: const Icon(Icons.more_vert),
           ),
@@ -212,22 +232,63 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       body: Consumer2<SubjectProvider, TaskProvider>(
         builder: (_, subjectProvider, taskProvider, __) {
           final subjects = subjectProvider.allSubjects;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12.0,
+                ),
+                child: Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .spaceBetween, // Zarovná děti na opačné konce
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .center, // Vertikální zarovnání na střed
+                  children: [
+                    // Levý text: "Předměty"
+                    Text(
+                      'Předměty',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    // Pravý text: Datum
+                    Text(
+                      _getFormattedDate(),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, thickness: 0.5),
+              Expanded(
+                child:
+                    subjects.isEmpty
+                        ? const Center(child: Text("Žádné předměty"))
+                        : ListView.builder(
+                          itemCount: subjects.length,
+                          itemBuilder: (_, index) {
+                            final subject = subjects[index];
+                            // Získání úkolů pro předmět
+                            final tasks =
+                                taskProvider.allTasks
+                                    .where(
+                                      (task) => task.subjectId == subject.id,
+                                    )
+                                    .toList();
 
-          if (subjects.isEmpty) {
-            return Center(child: Text("Žádné předměty"));
-          }
-
-          return ListView.builder(
-            itemCount: subjects.length,
-            itemBuilder: (_, index) {
-              final subject = subjects[index];
-              final tasks =
-                  taskProvider.allTasks
-                      .where((task) => task.subjectId == subject.id)
-                      .toList();
-
-              return SubjectCard(subject: subject, tasks: tasks);
-            },
+                            return SubjectCard(subject: subject, tasks: tasks);
+                          },
+                        ),
+              ),
+            ],
           );
         },
       ),

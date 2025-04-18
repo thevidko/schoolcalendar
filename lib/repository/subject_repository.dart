@@ -42,4 +42,15 @@ class SubjectRepository {
       log('Failed to delete subject: ${e.toString()}');
     }
   }
+
+  Future<int> deleteAllSubjects() async {
+    try {
+      final deletedRowCount = await db.delete(db.subjects).go();
+      log('$deletedRowCount subjects deleted successfully from the database.');
+      return deletedRowCount; // Vrátíme počet smazaných předmětů
+    } catch (e) {
+      log('Failed to delete all subjects: ${e.toString()}');
+      throw Exception('Failed to delete all subjects: $e');
+    }
+  }
 }

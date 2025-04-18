@@ -39,6 +39,15 @@ class SubjectProvider extends ChangeNotifier {
     _selectedSubject = null;
     notifyListeners();
   }
+
+  Future<void> deleteAllSubjects() async {
+    final deletedCount = await _subjectRepository.deleteAllSubjects();
+    print('$deletedCount subjects deleted from DB.');
+    // Vymaže lokální data v provideru
+    _allSubjects = [];
+    _selectedSubject = null;
+    notifyListeners();
+  }
 }
 
 extension SubjectProviderActions on SubjectProvider {

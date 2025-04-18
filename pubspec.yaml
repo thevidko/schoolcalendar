@@ -46,6 +46,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2 # Nebo nejnovější verze pro bezpečné uložení
   url_launcher: ^6.3.0 # Pro jistotu, i když primárně použijeme webview
   http: ^1.1.0
+  flex_color_scheme: ^8.2.0
 
 dev_dependencies:
   flutter_test:
