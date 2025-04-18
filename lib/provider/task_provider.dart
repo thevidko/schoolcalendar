@@ -1,9 +1,17 @@
 // task_provider.dart
 
+import 'dart:developer';
+
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:schoolcalendar/data/db/database.dart';
+import 'package:schoolcalendar/provider/settings_provider.dart';
 import 'package:schoolcalendar/repository/task_repository.dart';
+import 'package:schoolcalendar/service/notification_service.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz_data;
 
 class TaskProvider extends ChangeNotifier {
   TaskProvider() {
@@ -35,9 +43,34 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners(); // Informuje widgety o změně seznamu
   }
 
-  Future<void> addTask(TasksCompanion task) async {
-    await _taskRepository.addNewTask(task);
-    await getAllTasks(); // obnovíme seznam po přidání
+  Future<void> addTask(BuildContext context, TasksCompanion companion) async {
+    // Uložíme si ScaffoldMessenger pro případné zobrazení chyb
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    try {
+      // 1. Zavoláme metodu repository, která nyní vrací Future<Task>
+      final Task insertedTask = await _taskRepository.addNewTask(companion);
+
+      // 2. Obnovíme seznamy úkolů (po úspěšném vložení)
+      if (companion.subjectId.present) {
+        await getTasksBySubjectId(companion.subjectId.value);
+      }
+      await getAllTasks(); // Aktualizuje _allTasks
+
+      // 3. Přímo použijeme vrácený Task objekt pro plánování notifikací
+      //    Žádná záložní logika není potřeba.
+      await _scheduleNotificationsForTask(context, insertedTask);
+
+      log('Task ${insertedTask.id} added and notifications scheduled.');
+    } catch (e) {
+      log('Error adding task in provider: $e');
+      // Zobrazíme chybu uživateli pomocí uloženého messengeru
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Chyba při přidávání úkolu: $e')),
+      );
+      // Můžete zvážit re-throw, pokud má UI reagovat dál
+      // throw e;
+    }
   }
 
   Future<void> deleteTask(int taskId) async {
@@ -46,8 +79,6 @@ class TaskProvider extends ChangeNotifier {
     if (index != -1) {
       // Uchováme si kopii úkolu pro případné vrácení při chybě
       final taskToDelete = _tasksBySubject[index];
-
-      // --- OPTIMISTICKÝ UPDATE ---
       // 1. Okamžitě odstraníme úkol z lokálního seznamu
       _tasksBySubject.removeAt(index);
 
@@ -58,6 +89,8 @@ class TaskProvider extends ChangeNotifier {
       try {
         // 3. Teprve teď provedeme asynchronní smazání z databáze/repository
         await _taskRepository.deleteTask(taskId);
+        // --- Zrušení naplánovaných notifikací ---
+        await AwesomeNotificationService.cancelTaskNotifications(taskId);
         getAllTasks();
         print('Task $taskId deleted successfully from repository.');
         // Není už potřeba volat getTasksBySubjectId, UI je aktuální
@@ -78,7 +111,11 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateTaskCompletion(int taskId, bool isCompleted) async {
+  Future<void> updateTaskCompletion(
+    BuildContext context,
+    int taskId,
+    bool isCompleted,
+  ) async {
     final index = _tasksBySubject.indexWhere((task) => task.id == taskId);
     if (index != -1) {
       final originalTask = _tasksBySubject[index];
@@ -105,6 +142,17 @@ class TaskProvider extends ChangeNotifier {
         // 3. Provedeme asynchronní update v databázi
         await _taskRepository.updateTaskCompletion(taskId, isCompleted);
         print('Task $taskId completion updated successfully in repository.');
+
+        // --- Zrušení nebo přeplánování notifikací ---
+        if (isCompleted) {
+          // Pokud je úkol označen jako splněný, zrušíme jeho notifikace
+          await AwesomeNotificationService.cancelTaskNotifications(taskId);
+        } else {
+          // Pokud je úkol označen zpět jako nesplněný, přeplánujeme notifikace
+          // (Použijeme updatedTask, který má isCompleted=false)
+          await _scheduleNotificationsForTask(context, updatedTask);
+        }
+        // ------------------------------------------
       } catch (error) {
         print('Error updating task $taskId completion in repository: $error');
         // 4. Zpracování chyby: Vrátíme původní stav úkolu
@@ -114,6 +162,80 @@ class TaskProvider extends ChangeNotifier {
       }
     }
   }
+
+  // --- Pomocná metoda pro plánování ---
+  // BuildContext je potřeba pro přístup k SettingsProvider
+  Future<void> _scheduleNotificationsForTask(
+    BuildContext context,
+    Task task,
+  ) async {
+    final settings = context.read<SettingsProvider>();
+    final now = DateTime.now(); // Použijeme DateTime.now() pro isAfter check
+
+    print("Awesome Scheduling for Task ID: ${task.id}, Due: ${task.dueDate}");
+
+    await AwesomeNotificationService.cancelTaskNotifications(task.id);
+
+    const bool usePrecise =
+        false; // <-- ROZHODNUTÍ ZDE (false = bez speciálního oprávnění)
+
+    if (settings.notifyOneHourBefore) {
+      final scheduleTime = task.dueDate.subtract(const Duration(hours: 1));
+      if (scheduleTime.isAfter(now)) {
+        // Jednoduchá kontrola
+        await AwesomeNotificationService.scheduleNotification(
+          id: AwesomeNotificationService.generateNotificationId(task.id, 1),
+          title: 'Připomenutí: ${task.title}',
+          body:
+              'Termín je za hodinu (${DateFormat('HH:mm').format(task.dueDate)}).',
+          scheduledDateTime: scheduleTime,
+          payload: {
+            'taskId': task.id.toString(),
+            'interval': '1h',
+          }, // Příklad payloadu
+          usePreciseAlarm: usePrecise,
+        );
+      } else {
+        print("[1h] Skipped (past)");
+      }
+    }
+    if (settings.notifyOneDayBefore) {
+      final scheduleTime = task.dueDate.subtract(const Duration(days: 1));
+      if (scheduleTime.isAfter(now)) {
+        await AwesomeNotificationService.scheduleNotification(
+          id: AwesomeNotificationService.generateNotificationId(task.id, 2),
+          title: 'Připomenutí: ${task.title}',
+          body:
+              'Termín je zítra (${DateFormat('d.M. HH:mm').format(task.dueDate)}).',
+          scheduledDateTime: scheduleTime,
+          payload: {'taskId': task.id.toString(), 'interval': '1d'},
+          usePreciseAlarm: usePrecise,
+        );
+      } else {
+        print("[1d] Skipped (past)");
+      }
+    }
+    if (settings.notifyOneWeekBefore) {
+      final scheduleTime = task.dueDate.subtract(const Duration(days: 7));
+      if (scheduleTime.isAfter(now)) {
+        await AwesomeNotificationService.scheduleNotification(
+          id: AwesomeNotificationService.generateNotificationId(task.id, 3),
+          title: 'Připomenutí: ${task.title}',
+          body:
+              'Termín je za týden (${DateFormat('d.M.yyyy HH:mm').format(task.dueDate)}).',
+          scheduledDateTime: scheduleTime,
+          payload: {'taskId': task.id.toString(), 'interval': '1w'},
+          usePreciseAlarm: usePrecise,
+        );
+      } else {
+        print("[1w] Skipped (past)");
+      }
+    }
+    print("Awesome Scheduling finished for Task ID: ${task.id}");
+  }
+
+  // Nezapomeňte aktualizovat i volání cancel v deleteTask a updateTaskCompletion
+  // na AwesomeNotificationService.cancelTaskNotifications(taskId);
 
   void clearTasksBySubject() {
     _tasksBySubject = [];

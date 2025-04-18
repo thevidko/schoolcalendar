@@ -140,7 +140,7 @@ class TaskItemDetail extends StatelessWidget {
               taskProvider.deleteTask(task.id);
             } else {
               // Akce označení jako splněno
-              taskProvider.updateTaskCompletion(task.id, true);
+              taskProvider.updateTaskCompletion(context, task.id, true);
             }
           }
         });

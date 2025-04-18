@@ -39,14 +39,17 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.0 # Podpora SQLite
   path_provider: ^2.1.2 # Přístup k úložišti
   path: ^1.8.3
-  #flutter_local_notifications: ^16.3.0 # Notifikace
-  intl: ^0.18.1 # Formátování dat
+  intl: ^0.20.2 # Formátování dat
   provider: ^6.0.5 # State management
-  flutter_inappwebview: ^6.0.0
-  flutter_secure_storage: ^9.2.2 # Nebo nejnovější verze pro bezpečné uložení
+  flutter_inappwebview: ^6.0.0 # In App Web
+  flutter_secure_storage: ^9.2.2 # pro bezpečné uložení tokenů
   url_launcher: ^6.3.0 # Pro jistotu, i když primárně použijeme webview
   http: ^1.1.0
-  flex_color_scheme: ^8.2.0
+  flex_color_scheme: ^8.2.0 #Jednoduché nastavení themes
+  shared_preferences: ^2.2.2 # Ukládání preferencí
+  awesome_notifications: ^0.10.1
+  timezone: ^0.9.2                 # Pro práci s časovými zónami
+  flutter_timezone: ^4.1.0 # Pomocník pro získání lokální zóny
 
 dev_dependencies:
   flutter_test:

@@ -149,7 +149,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     await Provider.of<TaskProvider>(
                       context,
                       listen: false,
-                    ).addTask(newTask);
+                    ).addTask(context, newTask);
                     Navigator.pop(context);
                   }
                 },
