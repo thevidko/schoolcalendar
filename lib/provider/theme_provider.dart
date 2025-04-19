@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,7 +25,7 @@ class ThemeProvider extends ChangeNotifier {
         _themeMode = ThemeMode.light;
       }
     } catch (e) {
-      print("Error loading theme preference: $e");
+      log("Error loading theme preference: $e");
       _themeMode = ThemeMode.light;
     }
     notifyListeners();
@@ -39,7 +41,7 @@ class ThemeProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_themePreferenceKey, mode.index);
     } catch (e) {
-      print("Error saving theme preference: $e");
+      log("Error saving theme preference: $e");
     }
   }
 

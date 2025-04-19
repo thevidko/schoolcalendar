@@ -1,9 +1,8 @@
-// task_item_detail.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:schoolcalendar/data/db/database.dart';
-import 'package:schoolcalendar/provider/task_provider.dart'; // Upravte cestu
+import 'package:schoolcalendar/provider/task_provider.dart';
 
 class TaskItemDetail extends StatelessWidget {
   final Task task;
@@ -20,7 +19,7 @@ class TaskItemDetail extends StatelessWidget {
       builder:
           (ctx) => AlertDialog(
             title: const Text('Smazat úkol?'),
-            content: Text('Opravdu si přejete smazat úkol "${task.title}"?'),
+            content: Text('Opravdu si přejete smazat termín "${task.title}"?'),
             actions: <Widget>[
               TextButton(
                 child: const Text('Zrušit'),
@@ -45,7 +44,7 @@ class TaskItemDetail extends StatelessWidget {
     // Získáme TaskProvider bez listen: false, protože ho potřebujeme jen pro volání akcí
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
 
-    // Kontrola termínu - porovnáváme jen datum (ignorujeme čas)
+    // Kontrola termínu - porovnáváme jen datum
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final dueDateOnly = DateTime(
@@ -55,7 +54,7 @@ class TaskItemDetail extends StatelessWidget {
     );
     bool isOverdue = !task.isCompleted && dueDateOnly.isBefore(today);
 
-    // Formátování zbývajícího času (zjednodušené pro přehlednost)
+    // Formátování zbývajícího času
     String timeStatus = '';
     if (task.isCompleted) {
       timeStatus = 'Splněno';
@@ -113,7 +112,7 @@ class TaskItemDetail extends StatelessWidget {
           return true;
         }
       },
-      // onDismissed se zavolá POUZE pokud confirmDismiss vrátil true
+      // onDismissed se zavolá pokud confirmDismiss vrátil true
       onDismissed: (direction) {
         // Zobrazíme Snackbar hned
         final String message =
@@ -129,11 +128,8 @@ class TaskItemDetail extends StatelessWidget {
             duration: const Duration(seconds: 2),
           ),
         );
-
-        // --- ZMĚNA ZDE: Použití Future.delayed(Duration.zero) ---
         Future.delayed(Duration.zero, () {
           // Zkontrolujeme, zda je widget stále připojený (mounted),
-          // i když by při tomto krátkém zpoždění měl být.
           if (context.mounted) {
             if (task.isCompleted) {
               // Akce smazání
@@ -144,10 +140,8 @@ class TaskItemDetail extends StatelessWidget {
             }
           }
         });
-        // --- KONEC ZMĚNY ---
       },
       child: ListTile(
-        // contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
         title: Text(
           task.title,
           style: TextStyle(
@@ -159,10 +153,9 @@ class TaskItemDetail extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          // Zobrazíme i čas, pokud je relevantní
           'Termín: ${DateFormat('dd.MM.yyyy HH:mm').format(task.dueDate)}',
           style: TextStyle(
-            color: textColor.withOpacity(0.8),
+            color: textColor.withValues(alpha: 0.8),
             decoration: task.isCompleted ? TextDecoration.lineThrough : null,
             decorationColor: Colors.grey,
           ),

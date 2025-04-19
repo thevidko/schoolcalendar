@@ -1,7 +1,7 @@
-// subject_detail_screen.dart (nebo jak se jmenuje váš soubor)
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:schoolcalendar/data/db/database.dart'; // Import Task
+import 'package:schoolcalendar/data/db/database.dart';
 import 'package:schoolcalendar/presentation/screens/add_task.dart';
 import 'package:schoolcalendar/presentation/widgets/task_item_detail.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
@@ -19,17 +19,15 @@ class SubjectDetailScreen extends StatefulWidget {
 
 class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   late Future<void> _subjectFuture;
-  int? _subjectIdInt; // ID předmětu jako integer pro TaskProvider
+  int? _subjectIdInt;
 
   @override
   void initState() {
     super.initState();
-    // Inicializujeme načtení předmětu jednou
     _subjectFuture = _loadSubjectAndTasks();
   }
 
   Future<void> _loadSubjectAndTasks() async {
-    // Použijeme provider s listen: false pro jednorázové načtení v initState/future
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
@@ -41,54 +39,41 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
     // 2. Zkontrolujeme, zda převod proběhl úspěšně
     if (_subjectIdInt == null) {
-      print(
+      log(
         "Error: Could not parse subject ID '${widget.subjectIdString}' to an integer.",
       );
-      // Nastavíme chybový stav nebo vyčistíme data
-      subjectProvider
-          .clearSelectedSubject(); // Metoda pro vyčištění v SubjectProvider
+      subjectProvider.clearSelectedSubject();
       taskProvider.clearTasksBySubject();
 
-      return; // Ukončíme načítání, pokud ID není validní int
+      return;
     }
-
-    print("Parsed Subject ID (int): $_subjectIdInt"); // Debug print
-
     try {
-      // 3. Načti předmět pomocí INT ID
-      await subjectProvider.getSubjectById(
-        _subjectIdInt!,
-      ); // Nyní předáváme int
+      // 3. Načti předmět
+      await subjectProvider.getSubjectById(_subjectIdInt!);
 
       // 4. Zkontroluj, zda se předmět načetl
       final subject = subjectProvider.selectedSubject;
       if (subject != null) {
-        print('Subject loaded: ${subject.name}'); // Debug print
-        // 5. Načti úkoly pomocí INT ID (už ho máme v _subjectIdInt)
+        // 5. Načti úkoly
         await taskProvider.getTasksBySubjectId(_subjectIdInt!);
       } else {
-        print("Error: Subject with ID $_subjectIdInt not found after loading.");
         // Předmět se nenašel, i když ID bylo validní int
         taskProvider.clearTasksBySubject();
       }
     } catch (error) {
-      print("Error loading subject or tasks: $error");
-      // Zpracování obecné chyby při načítání
+      log("Error loading subject or tasks: $error");
       subjectProvider.clearSelectedSubject();
       taskProvider.clearTasksBySubject();
     }
   }
 
-  // Metoda pro smazání předmětu (přesunuta sem z build metody)
+  /// Metoda pro smazání předmětu
   void _confirmDelete(BuildContext context, Subject subjectToDelete) {
-    // Získání providerů s listen: false pro akce
     final subjectProvider = Provider.of<SubjectProvider>(
       context,
       listen: false,
     );
-    final navigator = Navigator.of(
-      context,
-    ); // Uložení navigatoru před async operací
+    final navigator = Navigator.of(context);
 
     showDialog(
       context: context,
@@ -138,15 +123,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          //AddTaskScreen potřebuje subjectId (int)
           if (_subjectIdInt != null) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder:
-                    (_) => AddTaskScreen(
-                      subjectId: _subjectIdInt!,
-                    ), // Předáme INT ID
+                builder: (_) => AddTaskScreen(subjectId: _subjectIdInt!),
               ),
             ).then((_) {
               // Po návratu z AddTaskScreen znovu načteme úkoly
@@ -175,17 +156,13 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
         // Actions se zobrazí jen pokud máme načtený předmět
         actions: [
           Consumer<SubjectProvider>(
-            // Použijeme Consumer pro přístup k subject
             builder: (context, subjectData, child) {
               final subject = subjectData.selectedSubject;
               if (subject != null) {
                 return PopupMenuButton<String>(
                   onSelected: (value) {
                     if (value == 'delete') {
-                      _confirmDelete(
-                        context,
-                        subject,
-                      ); // Předáme načtený subjekt
+                      _confirmDelete(context, subject);
                     }
                   },
                   itemBuilder:
@@ -206,9 +183,8 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
           ),
         ],
       ),
-      //FutureBuilder pro počáteční načtení předmětu a úkolů
       body: FutureBuilder(
-        future: _subjectFuture, // Použijeme future inicializované v initState
+        future: _subjectFuture,
         builder: (context, snapshot) {
           // --- Stav načítání ---
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -217,19 +193,19 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
 
           // --- Chyba při načítání ---
           if (snapshot.hasError) {
-            print("Error in FutureBuilder: ${snapshot.error}"); // Debug print
+            log("Error in FutureBuilder: ${snapshot.error}");
             return Center(
               child: Text("Chyba při načítání dat: ${snapshot.error}"),
             );
           }
 
-          // --- Načteno (nebo chyba po načtení) ---
+          // --- Načteno ---
           return Consumer2<SubjectProvider, TaskProvider>(
             builder: (context, subjectData, taskData, child) {
               final subject = subjectData.selectedSubject;
               final subjectTasks = taskData.tasksBySubject;
 
-              // Pokud se předmět nenačetl (kontrola i po Future)
+              // Pokud se předmět nenačetl
               if (subject == null) {
                 return const Center(child: Text("Předmět nenalezen"));
               }
@@ -240,6 +216,9 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
               final completedTasks =
                   subjectTasks.where((task) => task.isCompleted).toList();
 
+              final headlineSmallStyle =
+                  Theme.of(context).textTheme.headlineSmall;
+              final headlineLarge = Theme.of(context).textTheme.headlineLarge;
               // --- Vykreslení UI ---
               return ListView(
                 padding: const EdgeInsets.all(16.0),
@@ -249,6 +228,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Theme.of(context).primaryColor),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -259,19 +239,23 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                           Text(
                             subject.name,
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headlineLarge,
+                            style: headlineLarge?.copyWith(
+                              color: Theme.of(context).primaryColor,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             subject.code,
                             textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headlineSmall,
+                            style: headlineSmallStyle?.copyWith(
+                              color: Theme.of(context).primaryColor,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24), // Větší mezera
+                  const SizedBox(height: 24),
                   // 2. Sekce nesplněných úkolů
                   if (uncompletedTasks.isNotEmpty) ...[
                     Text(
@@ -280,31 +264,20 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                   ],
-
-                  // 2b. Column pro nesplněné úkoly VYKRESLÍME VŽDY,
-                  //     ale její obsah bude generován jen pokud seznam není prázdný.
-                  //     Tím zajistíme, že Column existuje, i když se seznam vyprázdní.
                   Column(
                     children:
-                        uncompletedTasks // Podmíněně mapujeme obsah
+                        uncompletedTasks
                             .map(
                               (task) => TaskItemDetail(
-                                key: ValueKey(task.id), // Klíč je zde důležitý
+                                key: ValueKey(task.id),
                                 task: task,
                               ),
                             )
-                            .toList(), // Pokud je uncompletedTasks prázdný, výsledkem je prázdný List<Widget>
+                            .toList(),
                   ),
-
-                  // 2c. Mezera mezi sekcemi (můžeme ji nechat fixní nebo podmíněnou)
-                  //     Nechme ji zde pro konzistentní vzhled.
                   const SizedBox(height: 24),
 
-                  // --- KONEC ZMĚNY V SEKCI NESPLNĚNÝCH ÚKOLŮ ---
-
-                  // 3. Sekce splněných úkolů (můžeme použít stejný princip)
-
-                  // 3a. Nadpis jen pokud jsou splněné úkoly
+                  // Sekce splněných úkolů
                   if (completedTasks.isNotEmpty) ...[
                     Text(
                       "Splněné termíny (${completedTasks.length})",
@@ -315,7 +288,6 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                     const SizedBox(height: 8),
                   ],
 
-                  // 3b. Column pro splněné úkoly vykreslíme vždy
                   Column(
                     children:
                         completedTasks
@@ -329,8 +301,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                   ),
 
                   // 4. Zpráva, pokud nejsou žádné úkoly celkem
-                  if (subjectTasks
-                      .isEmpty) // Můžeme použít subjectTasks, je to jednodušší
+                  if (subjectTasks.isEmpty)
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 20.0),

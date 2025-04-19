@@ -1,15 +1,14 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:schoolcalendar/config/constants.dart';
 
-const String stagCallbackUrlScheme = "schoolcalendarapp";
-const String stagCallbackUrlHost = "stag-login-callback";
-const String stagCallbackUrl = "$stagCallbackUrlScheme://$stagCallbackUrlHost";
-
-// STAG login URL
-const String stagLoginBaseUrl =
-    "https://stagws.uhk.cz/ws/login"; // UNIVERZITA HRADEC KRÁLOVÉ
+const String stagCallbackUrlScheme = AppConstants.stagCallbackUrlScheme;
+const String stagCallbackUrlHost = AppConstants.stagCallbackUrlHost;
+const String stagCallbackUrl = AppConstants.stagCallbackUrl;
+const String stagLoginBaseUrl = AppConstants.stagLoginBaseUrl;
 
 class StagLoginScreen extends StatefulWidget {
   const StagLoginScreen({super.key});
@@ -34,7 +33,7 @@ class _StagLoginScreenState extends State<StagLoginScreen> {
     super.initState();
     // Sestavení URL pro přihlášení STAG
     _stagLoginUrl = Uri.parse("$stagLoginBaseUrl?originalURL=$stagCallbackUrl");
-    print("Navigating to STAG login: $_stagLoginUrl");
+    log("Navigating to STAG login: $_stagLoginUrl");
   }
 
   Future<void> _storeCredentials(
@@ -51,11 +50,11 @@ class _StagLoginScreenState extends State<StagLoginScreen> {
         key: 'stag_student_identifier',
         value: studentIdentifier,
       );
-      print(
+      log(
         "STAG Ticket and Identifier ($studentIdentifier) stored successfully.",
       );
     } else {
-      print(
+      log(
         "STAG Ticket stored, but student identifier (osCislo/userName) not found in userInfo.",
       );
       // Můžete zde případně smazat jen identifikátor, pokud už tam byl
@@ -68,13 +67,9 @@ class _StagLoginScreenState extends State<StagLoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Přihlášení IS/STAG'),
-        // Volitelně tlačítko pro zavření, pokud by se uživatel zasekl
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed:
-              () => Navigator.of(
-                context,
-              ).pop(false), // Vrací false = neúspěch/zrušeno
+          onPressed: () => Navigator.of(context).pop(false),
         ),
       ),
       body: Stack(
@@ -101,7 +96,7 @@ class _StagLoginScreenState extends State<StagLoginScreen> {
               if (uri != null &&
                   uri.scheme == stagCallbackUrlScheme &&
                   uri.host == stagCallbackUrlHost) {
-                print("Callback URL intercepted!");
+                log("Callback URL intercepted!");
                 final ticket = uri.queryParameters['stagUserTicket'];
                 final userInfoBase64 = uri.queryParameters['stagUserInfo'];
                 String? osCislo;
@@ -114,7 +109,7 @@ class _StagLoginScreenState extends State<StagLoginScreen> {
                       base64Url.decode(userInfoBase64),
                     );
                     final userInfo = jsonDecode(userInfoJson);
-                    print("User Info Decoded: $userInfo");
+                    log("User Info Decoded: $userInfo");
                     // Získání osCislo nebo userName z první položky pole stagUserInfo
                     if (userInfo != null &&
                         userInfo['stagUserInfo'] is List &&
@@ -124,18 +119,18 @@ class _StagLoginScreenState extends State<StagLoginScreen> {
                       userName = stagInfo['userName']; // nullable
                     }
                   } catch (e) {
-                    print("Error decoding or parsing stagUserInfo: $e");
+                    log("Error decoding or parsing stagUserInfo: $e");
                   }
                 }
 
                 if (ticket != null && ticket.isNotEmpty) {
-                  print("Ticket found: $ticket");
+                  log("Ticket found: $ticket");
                   // Uložíme ticket A identifikátor studenta
                   await _storeCredentials(ticket, osCislo, userName);
                   if (mounted) Navigator.of(context).pop(true); // úspěch
                   return NavigationActionPolicy.CANCEL;
                 } else {
-                  print("Callback received, but ticket is null or empty.");
+                  log("Callback received, but ticket is null or empty.");
                   // Pokud ticket není, nemá smysl ukládat ani identifikátor
                   await _secureStorage.delete(key: 'stag_user_ticket');
                   await _secureStorage.delete(key: 'stag_student_identifier');
@@ -168,8 +163,7 @@ class _StagLoginScreenState extends State<StagLoginScreen> {
               }
             },
             onLoadError: (controller, request, errorType, description) {
-              print("WebView Load Error: $description");
-              // Můžete zobrazit chybovou zprávu uživateli
+              log("WebView Load Error: $description");
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Chyba načítání: $description')),

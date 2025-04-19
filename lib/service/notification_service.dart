@@ -1,4 +1,6 @@
 // lib/services/awesome_notification_service.dart (příklad)
+import 'dart:developer';
+
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart'; // Potřeba pro Color
 
@@ -6,12 +8,10 @@ import 'package:flutter/material.dart'; // Potřeba pro Color
 const String channelKeyReminders = 'school_calendar_reminders_channel';
 
 class AwesomeNotificationService {
+  ///  Inicializace Awesome Notifications
   static Future<void> initialize() async {
-    // --- Inicializace Awesome Notifications ---
     await AwesomeNotifications().initialize(
-      // Použijte cestu k ikoně v android/app/src/main/res/drawable
-      // Název ikony BEZ přípony. Musí existovat!
-      null, // Vytvořte ikonu např. res_app_icon.png
+      null, //např. res_app_icon.png
       [
         // Seznam kanálů k vytvoření
         NotificationChannel(
@@ -24,14 +24,14 @@ class AwesomeNotificationService {
           channelShowBadge: true, // Zobrazit odznak na ikoně aplikace
           playSound: true,
           enableVibration: true,
-          // locked: true, // Pokud chcete, aby uživatel nemohl kanál snadno vypnout
+          // locked: true,
         ),
       ],
-      // Volitelně: Nastavení pro debugování
-      debug: true, // Vypíše více logů z pluginu
+      // Nastavení pro debugování
+      debug: true,
     );
 
-    // Nastavení listenerů pro akce (kliknutí na notifikaci atd.)
+    // Nastavení listenerů pro akce
     AwesomeNotifications().setListeners(
       onActionReceivedMethod: NotificationController.onActionReceivedMethod,
       onNotificationCreatedMethod:
@@ -41,25 +41,21 @@ class AwesomeNotificationService {
       onDismissActionReceivedMethod:
           NotificationController.onDismissActionReceivedMethod,
     );
-
-    print("AwesomeNotificationService Initialized.");
+    log("Awesome notifications initialized");
   }
 
-  // --- Žádost o oprávnění ---
+  /// Žádost o oprávnění
   static Future<bool> requestPermissions() async {
     // Zjistí, zda jsou notifikace obecně povoleny
     bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-    print("Notifications allowed initially: $isAllowed");
 
     if (!isAllowed) {
       // Požádá o základní oprávnění (POST_NOTIFICATIONS na A13+)
       isAllowed =
           await AwesomeNotifications().requestPermissionToSendNotifications();
-      print("Permission request result: $isAllowed");
     }
 
-    // Volitelně: Zkontrolovat/požádat o oprávnění pro PŘESNÉ alarmy
-    // Pokud plánujete používat preciseAlarm: true
+    // Volitelně  preciseAlarm: true
     /*
     bool hasPrecise = await AwesomeNotifications().checkPermissionList(
         permissions: [NotificationPermission.PreciseAlarms]);
@@ -79,61 +75,55 @@ class AwesomeNotificationService {
     return isAllowed;
   }
 
-  // --- Plánování notifikace ---
+  // Plánování notifikace
   static Future<void> scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDateTime,
-    Map<String, String>? payload, // Payload je Map<String, String>?
-    bool usePreciseAlarm = false, // PARAMETR: Chceme přesný alarm? Defaultně NE
+    Map<String, String>? payload,
+    bool usePreciseAlarm = false, // PARAMETR: přesný alarm?
   }) async {
     // Čas musí být v budoucnosti
     if (scheduledDateTime.isBefore(DateTime.now())) {
-      print(
+      log(
         "AwesomeNotify Service: Skipping scheduling ID $id: Scheduled time is in the past.",
       );
       return;
     }
 
-    print(
+    log(
       "AwesomeNotify Service: Scheduling ID=$id for $scheduledDateTime [Precise: $usePreciseAlarm]",
     );
 
     try {
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
-          id: id, // Unikátní ID (int)
-          channelKey: channelKeyReminders, // Klíč kanálu
+          id: id,
+          channelKey: channelKeyReminders,
           title: title,
           body: body,
-          payload: payload, // Vlastní data
-          notificationLayout: NotificationLayout.Default, // Běžné rozložení
-          // Můžete přidat další (largeIcon, bigPicture, ...)
-          // locked: true, // Notifikace zůstane, dokud ji uživatel neodstraní
-          wakeUpScreen: true, // Pokusí se probudit obrazovku
-          category: NotificationCategory.Reminder, // Kategorie
+          payload: payload,
+          notificationLayout: NotificationLayout.Default,
+          wakeUpScreen: true,
+          category: NotificationCategory.Reminder,
         ),
         schedule: NotificationCalendar.fromDate(
-          date:
-              scheduledDateTime, // DateTime objekt (použije lokální čas zařízení)
-          preciseAlarm:
-              usePreciseAlarm, // Použít přesný alarm? VYŽADUJE OPRÁVNĚNÍ!
-          allowWhileIdle: true, // Povolit i v idle režimu (důležité!)
+          date: scheduledDateTime,
+          preciseAlarm: usePreciseAlarm,
+          allowWhileIdle: true, // Povolit i v idle režimu
           repeats: false, // Jednorázová notifikace
         ),
-        // Můžete přidat i tlačítka akcí
-        // actionButtons: [ NotificationActionButton(...) ]
       );
-      print(
+      log(
         "AwesomeNotify Service: Notification ID $id scheduled successfully for $scheduledDateTime [Precise: $usePreciseAlarm]",
       );
     } catch (e) {
-      print("Error scheduling awesome notification ID $id: $e");
+      log("Error scheduling awesome notification ID $id: $e");
     }
   }
 
-  // --- Testovací notifikace ---
+  /// Testovací notifikace
   static Future<void> showTestNotification() async {
     print("Showing awesome test notification...");
     try {
@@ -148,13 +138,12 @@ class AwesomeNotificationService {
         ),
         // Bez parametru 'schedule' se zobrazí ihned
       );
-      print("Awesome test notification created.");
     } catch (e) {
-      print("Error showing awesome test notification: $e");
+      log("Error showing awesome test notification: $e");
     }
   }
 
-  // --- Zrušení notifikací ---
+  // Zrušení notifikací
   static Future<void> cancelNotification(int id) async {
     await AwesomeNotifications().cancel(id);
     print("Cancelled awesome notification with ID: $id");
@@ -166,28 +155,21 @@ class AwesomeNotificationService {
   }
 
   static Future<void> cancelTaskNotifications(int taskId) async {
-    // Potřebujeme znát, jaká ID byla pro úkol použita
-    // Pokud používáme stejný generátor ID jako předtím:
     await cancelNotification(generateNotificationId(taskId, 1));
     await cancelNotification(generateNotificationId(taskId, 2));
     await cancelNotification(generateNotificationId(taskId, 3));
-    // Nebo pokud awesome_notifications má lepší způsob, jak rušit podle payloadu/tagu?
-    // Prozkoumat API pro metody jako cancelNotificationsByTag apod.
-    // Pro jednoduchost zatím použijeme starý způsob rušení podle ID.
-    print("Cancelled potential awesome notifications for Task ID: $taskId");
+    log("Cancelled potential awesome notifications for Task ID: $taskId");
   }
 
-  // Generátor ID (může zůstat stejný, pokud jsou ID v rozsahu 32-bit int)
+  // Generátor ID
   static int generateNotificationId(int taskId, int intervalCode) {
     const int hourOffset = 100000;
     const int dayOffset = 200000;
     const int weekOffset = 300000;
     if (taskId <= 0 || intervalCode < 1 || intervalCode > 3) {
-      print(
+      log(
         "WARN: Invalid taskId or intervalCode for notification ID generation.",
       );
-      // Vrátíme nějaké nekonfliktní ID, např. negativní variantu,
-      // kterou pak awesome_notifications může ignorovat, pokud neumí záporná ID
       return -(taskId.abs() + intervalCode * 10);
     }
     int id;
@@ -207,7 +189,7 @@ class AwesomeNotificationService {
     // Omezení na 32-bit signed integer
     const int maxInt32 = 2147483647;
     if (id > maxInt32) {
-      print(
+      log(
         "WARN: Generated notification ID exceeds 32-bit limit, potentially wrapping around.",
       );
       // Může způsobit kolize, zvážit jiný systém ID
@@ -217,8 +199,7 @@ class AwesomeNotificationService {
   }
 }
 
-// --- Controller pro zpracování akcí notifikací (minimální verze) ---
-// Toto je potřeba pro setListeners, i když to třeba hned nevyužiješ
+//Controller pro zpracování akcí notifikací
 // Ideálně by měl být v samostatném souboru
 class NotificationController {
   /// Use this method to detect when a new notification or a schedule is created
@@ -226,7 +207,7 @@ class NotificationController {
   static Future<void> onNotificationCreatedMethod(
     ReceivedNotification receivedNotification,
   ) async {
-    print('onNotificationCreatedMethod: ${receivedNotification.id}');
+    log('onNotificationCreatedMethod: ${receivedNotification.id}');
   }
 
   /// Use this method to detect every time that a new notification is displayed
@@ -234,7 +215,7 @@ class NotificationController {
   static Future<void> onNotificationDisplayedMethod(
     ReceivedNotification receivedNotification,
   ) async {
-    print('onNotificationDisplayedMethod: ${receivedNotification.id}');
+    log('onNotificationDisplayedMethod: ${receivedNotification.id}');
   }
 
   /// Use this method to detect if the user dismissed a notification
@@ -242,7 +223,7 @@ class NotificationController {
   static Future<void> onDismissActionReceivedMethod(
     ReceivedAction receivedAction,
   ) async {
-    print('onDismissActionReceivedMethod: ${receivedAction.id}');
+    log('onDismissActionReceivedMethod: ${receivedAction.id}');
   }
 
   /// Use this method to detect when the user taps on a notification or action button
@@ -250,9 +231,7 @@ class NotificationController {
   static Future<void> onActionReceivedMethod(
     ReceivedAction receivedAction,
   ) async {
-    print('onActionReceivedMethod: ${receivedAction.id}');
-    print('Payload: ${receivedAction.payload}'); // Vypíše payload
-    // Zde můžeš přidat logiku pro navigaci na základě payloadu
-    // Např. rozparsovat payload['taskId'] a navigovat na detail úkolu
+    log('onActionReceivedMethod: ${receivedAction.id}');
+    log('Payload: ${receivedAction.payload}');
   }
 }

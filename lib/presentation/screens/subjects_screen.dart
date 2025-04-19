@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:schoolcalendar/data/api/stag_api_service.dart';
-import 'package:schoolcalendar/data/db/database.dart';
-import 'package:schoolcalendar/data/models/stag_subject_model.dart';
+import 'package:schoolcalendar/provider/subject_provider.dart';
+import 'package:schoolcalendar/provider/task_provider.dart';
 import 'package:schoolcalendar/presentation/screens/add_subject.dart';
 import 'package:schoolcalendar/presentation/screens/settings.dart';
 import 'package:schoolcalendar/presentation/screens/stag_login.dart';
 import 'package:schoolcalendar/presentation/widgets/subject_card.dart';
-import 'package:schoolcalendar/provider/subject_provider.dart';
-import 'package:schoolcalendar/provider/task_provider.dart';
-import 'package:schoolcalendar/presentation/widgets/subject_import_dialog.dart';
+import 'package:schoolcalendar/service/stag_import_service.dart';
+import 'package:schoolcalendar/utils/date_formatter.dart';
 
 class SubjectsScreen extends StatefulWidget {
   const SubjectsScreen({super.key});
@@ -21,150 +17,89 @@ class SubjectsScreen extends StatefulWidget {
 }
 
 class _SubjectsScreenState extends State<SubjectsScreen> {
-  final _secureStorage = const FlutterSecureStorage();
-  final _stagApiService = StagApiService(); // Instance API služby
-  bool _isImporting = false; // zobrazení indikátoru načítání
+  final _stagImportService = StagImportService();
 
-  // Metoda pro spuštění celého importního procesu
-  Future<void> _startStagImport() async {
-    setState(() => _isImporting = true); // Zobrazit indikátor
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Načítám předměty ze STAG...')),
+  // Stav pro zobrazení indikátoru načítání během importu
+  bool _isImporting = false;
+
+  void _navigateToAddSubject() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AddSubject()));
+  }
+
+  /// Spustí proces přihlášení do STAGu a následný import předmětů.
+  Future<void> _triggerStagImport() async {
+    // Navigace na login STAG, poté kontrola úspěchu
+    final loginSuccess = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const StagLoginScreen()),
     );
 
-    try {
-      // 1. Získat přihlašovací údaje
-      final ticket = await _secureStorage.read(key: 'stag_user_ticket');
-      final identifier = await _secureStorage.read(
-        key: 'stag_student_identifier',
+    if (loginSuccess == true) {
+      if (!mounted) return;
+
+      await _stagImportService.startImport(
+        context: context,
+        onImportStart: () {
+          // zobrazíme indikátor
+          if (mounted) setState(() => _isImporting = true);
+        },
+        onImportFinish: (success, message) {
+          //zobrazíme výsledek a skryjeme indikátor
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                duration: const Duration(seconds: 4),
+                backgroundColor: success ? Colors.green : Colors.red,
+              ),
+            );
+            setState(() => _isImporting = false); // Skrytí indikátoru
+          }
+        },
       );
-
-      if (ticket == null || identifier == null) {
-        throw Exception('Přihlašovací údaje STAG nebyly nalezeny.');
-      }
-
-      // 2. Načíst předměty z API
-      final List<StagSubject> stagSubjects = await _stagApiService
-          .fetchStudentSubjects(ticket, identifier);
-
-      // 3. Zobrazit dialog pro výběr (pokud jsou nějaké předměty)
-      if (!mounted) return; //Kontrola, zda je widget stále ve stromu
-      if (stagSubjects.isEmpty) {
+    } else {
+      // Přihlášení selhalo nebo bylo zrušeno uživatelem
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Ze STAGu nebyly načteny žádné předměty.'),
+            content: Text(
+              'Přihlášení do STAG bylo zrušeno nebo selhalo. Import nebyl spuštěn.',
+            ),
           ),
         );
-        setState(() => _isImporting = false);
-        return;
-      }
-
-      final List<StagSubject>? selectedSubjects = await showSubjectImportDialog(
-        context,
-        stagSubjects,
-      );
-
-      // 4. Zpracovat vybrané předměty
-      if (selectedSubjects != null && selectedSubjects.isNotEmpty) {
-        if (!mounted) return;
-        final subjectProvider = Provider.of<SubjectProvider>(
-          context,
-          listen: false,
-        );
-        int importCount = 0;
-        int errorCount = 0;
-
-        setState(
-          () => _isImporting = true,
-        ); // Znovu zobrazit indikátor pro ukládání
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Importuji ${selectedSubjects.length} předmětů...'),
-          ),
-        );
-
-        // Projdeme vybrané předměty a přidáme je do DB
-        for (final subject in selectedSubjects) {
-          if (subject.zkratka != null && subject.nazev != null) {
-            final companion = SubjectsCompanion.insert(
-              name: subject.nazev!,
-              code: subject.zkratka!,
-            );
-            try {
-              await subjectProvider.addSubject(companion);
-              importCount++;
-            } catch (e) {
-              print("Error importing subject ${subject.zkratka}: $e");
-              errorCount++;
-              // řešení duplicit?
-            }
-          }
+        // Ujistíme se, že indikátor je skrytý, i kdyby náhodou zůstal viset
+        if (_isImporting) {
+          setState(() => _isImporting = false);
         }
-
-        // Zobrazit výsledek importu
-        String resultMessage =
-            'Import dokončen. Bylo importováno $importCount předmětů.';
-        if (errorCount > 0) {
-          resultMessage += ' Při importu $errorCount předmětů nastala chyba.';
-        }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(resultMessage),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      } else if (selectedSubjects != null && selectedSubjects.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Nebyly vybrány žádné předměty k importu.'),
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Import předmětů byl zrušen.')),
-          );
-        }
-      }
-    } catch (e) {
-      print("STAG Import Error: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Chyba při importu ze STAG: $e')),
-        );
-      }
-    } finally {
-      // Ukončení indikatoru načítaní
-      if (mounted) {
-        setState(() => _isImporting = false);
       }
     }
   }
 
-  String _getFormattedDate() {
-    final now = DateTime.now();
-    final formatter = DateFormat('EEEE, d. MMMM yyyy', 'cs_CZ');
-    return formatter.format(now);
+  /// Zpracuje výběr položky z menu v AppBaru.
+  void _handleMenuSelection(String value) {
+    if (value == 'import_stag') {
+      _triggerStagImport();
+    } else if (value == 'settings') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      );
+    }
   }
 
+  // --- Build metoda ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // --- Floating Action Button ---
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => AddSubject()),
-          );
-        },
-        child: Icon(Icons.add),
+        onPressed: _navigateToAddSubject, // Volá metodu pro navigaci
+        child: const Icon(Icons.add),
       ),
+
+      // --- AppBar ---
       appBar: AppBar(
-        title: Text("EduPlanner"),
+        title: const Text("EduPlanner"),
         actions: [
           if (_isImporting)
             const Padding(
@@ -180,40 +115,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                 ),
               ),
             ),
+          // Tlačítko menu (tři tečky)
           PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'import_stag') {
-                // Navigace na login obrazovku
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const StagLoginScreen()),
-                ).then((loginResult) {
-                  if (loginResult == true) {
-                    _startStagImport();
-                  } else if (loginResult == false) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Přihlášení do STAG bylo zrušeno nebo selhalo.',
-                        ),
-                      ),
-                    );
-                  }
-                });
-              } else if (value == 'settings') {
-                print('Vybrána položka Nastavení'); // Pro kontrolu v konzoli
-                // Zde přidejte navigaci na vaši obrazovku nastavení
-                // Předpokládáme, že máte obrazovku s názvem SettingsScreen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SettingsScreen(),
-                  ), // Vytvořte si SettingsScreen
-                );
-              }
-              // Nastavení  ?
-              // else if (value == 'settings') { ... }
-            },
+            onSelected: _handleMenuSelection,
             itemBuilder:
                 (context) => [
                   const PopupMenuItem(
@@ -221,34 +125,34 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     child: Text('Import ze STAG'),
                   ),
                   const PopupMenuItem(
-                    value: 'settings', // Unikátní hodnota pro tuto položku
-                    child: Text('Nastavení'), // Zobrazený text
+                    value: 'settings',
+                    child: Text('Nastavení'),
                   ),
                 ],
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert), // Ikona menu
           ),
         ],
       ),
+
+      // --- Body ---
       body: Consumer2<SubjectProvider, TaskProvider>(
         builder: (_, subjectProvider, taskProvider, __) {
+          // Získáme seznam všech předmětů z provideru
           final subjects = subjectProvider.allSubjects;
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Hlavička s názvem sekce a aktuálním datem
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
                   vertical: 12.0,
                 ),
                 child: Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween, // Zarovná děti na opačné konce
-                  crossAxisAlignment:
-                      CrossAxisAlignment
-                          .center, // Vertikální zarovnání na střed
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Levý text: "Předměty"
                     Text(
                       'Předměty',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -256,9 +160,8 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                    // Pravý text: Datum
                     Text(
-                      _getFormattedDate(),
+                      DateFormatter.formatCzechDate(DateTime.now()),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
@@ -267,16 +170,24 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                   ],
                 ),
               ),
+              // Oddělovač
               const Divider(height: 1, thickness: 0.5),
+
+              // Seznam předmětů
               Expanded(
                 child:
                     subjects.isEmpty
-                        ? const Center(child: Text("Žádné předměty"))
+                        ? const Center(
+                          child: Text(
+                            "Zatím nemáte žádné předměty.\n Můžete je přidat ručně (+) nebo importovat ze STAGu (⋮).",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        )
                         : ListView.builder(
                           itemCount: subjects.length,
                           itemBuilder: (_, index) {
                             final subject = subjects[index];
-                            // Získání úkolů pro předmět
                             final tasks =
                                 taskProvider.allTasks
                                     .where(

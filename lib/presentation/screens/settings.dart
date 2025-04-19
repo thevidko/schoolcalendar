@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:schoolcalendar/data/db/database.dart';
 import 'package:schoolcalendar/provider/settings_provider.dart';
 import 'package:schoolcalendar/provider/subject_provider.dart';
 import 'package:schoolcalendar/provider/task_provider.dart';
@@ -78,21 +76,18 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Přístup k providerům
     final themeProvider = context.watch<ThemeProvider>();
-    final settingsProvider =
-        context.watch<SettingsProvider>(); // Watch pro UI update
+    final settingsProvider = context.watch<SettingsProvider>();
     // Read pro akce
     // final settingsNotifier = context.read<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nastavení')),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8.0), // Menší padding
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         children: [
-          // --- Sekce Vzhled ---
+          // --- Vzhled ---
           ListTile(
-            // Mírné odsazení nadpisů sekcí
             title: Text(
               'Vzhled',
               style: TextStyle(
@@ -157,17 +152,13 @@ class SettingsScreen extends StatelessWidget {
             },
           ),
 
-          // --- PŘIDANÁ POLOŽKA: Test Notifikace ---
+          // --- Test Notifikace ---
           ListTile(
             leading: const Icon(Icons.notifications_active_outlined),
             title: const Text('Otestovat notifikaci'),
             subtitle: const Text('Zobrazí ukázkovou notifikaci ihned'),
             onTap: () {
-              print("Test notification button tapped.");
-              // Přímo zavoláme statickou metodu NotificationService
               AwesomeNotificationService.showTestNotification();
-
-              // Zobrazíme potvrzení uživateli
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
@@ -176,58 +167,6 @@ class SettingsScreen extends StatelessWidget {
                   duration: Duration(seconds: 3),
                 ),
               );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.timer_outlined), // Ikona časovače
-            title: const Text('Otestovat plánování (90s)'),
-            subtitle: const Text('Naplánuje notifikaci za 90 sekund'),
-            onTap: () async {
-              // Metoda musí být async kvůli await
-              // Uložíme si messenger před await pro případ, že context nebude platný
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              final now = DateTime.now();
-              // Čas plánování = aktuální čas + 90 sekund
-              final scheduledTime = now.add(const Duration(seconds: 90));
-              // Unikátní ID pro tuto testovací notifikaci (může být záporné)
-              const int testScheduleId = -90;
-
-              print("Scheduling 90s test notification for: $scheduledTime");
-
-              try {
-                // Zavoláme metodu pro plánování z AwesomeNotificationService
-                await AwesomeNotificationService.scheduleNotification(
-                  id: testScheduleId,
-                  title: 'Plánovaný Test (90s) ⏱️',
-                  body:
-                      'Tato notifikace byla naplánována na ${DateFormat('HH:mm:ss').format(scheduledTime)}.',
-                  scheduledDateTime: scheduledTime, // Čas za 90 sekund
-                  payload: {'test_type': 'scheduled_90s'}, // Volitelný payload
-                  usePreciseAlarm: false, // Použijeme NEPŘESNÉ plánování
-                );
-
-                // Zobrazíme potvrzení (až po úspěšném naplánování)
-                // Použijeme uložený messenger a zkontrolujeme mounted
-                if (scaffoldMessenger.mounted) {
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Notifikace naplánována za 90s na cca ${DateFormat('HH:mm:ss').format(scheduledTime)}.',
-                      ),
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              } catch (e) {
-                print("Error scheduling 90s test notification: $e");
-                if (scaffoldMessenger.mounted) {
-                  scaffoldMessenger.showSnackBar(
-                    SnackBar(
-                      content: Text('Chyba plánování testovací notifikace: $e'),
-                    ),
-                  );
-                }
-              }
             },
           ),
 

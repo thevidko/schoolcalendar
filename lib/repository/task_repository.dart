@@ -5,7 +5,6 @@ import 'package:schoolcalendar/data/db/database.dart';
 import 'package:schoolcalendar/locator.dart';
 
 class TaskRepository {
-  // Inject database class
   AppDatabase db = locator.get<AppDatabase>();
 
   Future<List<Task>> allTasks() async {
@@ -44,10 +43,9 @@ class TaskRepository {
       log(
         'Task added and fetched successfully: ID $newId, Title: ${newTask.title}',
       );
-      return newTask; // Vrátíme načtený Task objekt
+      return newTask;
     } catch (e) {
       log('Failed to add task or fetch it back: ${e.toString()}');
-      // Vyhodíme výjimku, aby ji mohl zpracovat Provider a případně UI
       throw Exception('Nepodařilo se přidat úkol: $e');
     }
   }
@@ -58,11 +56,9 @@ class TaskRepository {
 
   Future<int> updateTaskCompletion(int taskId, bool isCompleted) {
     final companion = TasksCompanion(isCompleted: Value(isCompleted));
-    // Volání metody z databázové třídy/DAO
     return updateTask(taskId, companion);
   }
 
-  // Metoda pro smazání tasku
   Future<int> deleteTask(int id) {
     return (db.delete(db.tasks)..where((t) => t.id.equals(id))).go();
   }

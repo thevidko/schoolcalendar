@@ -1,12 +1,14 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'package:schoolcalendar/config/constants.dart';
 import 'package:schoolcalendar/data/models/stag_subject_model.dart';
 
 class StagApiService {
-  final String _baseUrl = "stagws.uhk.cz"; //UNIVERZITA HRADEC KRÁLOVÉ
-  final String _basePath = "/ws/services/rest2";
+  final String _baseUrl = AppConstants.baseUrl;
+  final String _basePath = AppConstants.basePath;
 
-  // Metoda pro získání předmětů studenta
+  /// Metoda pro získání předmětů studenta
   Future<List<StagSubject>> fetchStudentSubjects(
     String ticket,
     String studentIdentifier,
@@ -36,8 +38,6 @@ class StagApiService {
     try {
       final response = await http.get(uri, headers: headers);
 
-      print("STAG API Response Status: ${response.statusCode}"); // Debug print
-
       if (response.statusCode == 200) {
         // Úspěch, parse JSON
         final decodedBody = utf8.decode(
@@ -56,19 +56,19 @@ class StagApiService {
                   .where(
                     (subject) =>
                         subject.zkratka != null && subject.nazev != null,
-                  ) // Filtrujeme neplatné
+                  )
                   .toList();
           return subjects;
         } else {
           // Očekávaná struktura JSONu nebyla nalezena
-          print(
+          log(
             "STAG API Response missing 'predmetStudenta' list or has wrong format.",
           );
           return [];
         }
       } else {
         // Chyba API
-        print(
+        log(
           "STAG API Error: ${response.statusCode} - ${response.reasonPhrase}",
         );
         throw Exception(
@@ -77,7 +77,7 @@ class StagApiService {
       }
     } catch (e) {
       // Síťová chyba nebo chyba při parsování
-      print("Error fetching STAG subjects: $e");
+      log("Error fetching STAG subjects: $e");
       throw Exception('Chyba připojení nebo zpracování odpovědi ze STAGu: $e');
     }
   }

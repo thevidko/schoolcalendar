@@ -35,7 +35,9 @@ class TaskItem extends StatelessWidget {
           color:
               isOverdue
                   ? Colors.red
-                  : Colors.white, // Červená pro starší termíny
+                  : Theme.of(
+                    context,
+                  ).colorScheme.primary, // Červená pro starší termíny
         ),
       ),
       subtitle: Text(
@@ -44,7 +46,9 @@ class TaskItem extends StatelessWidget {
           color:
               isOverdue
                   ? Colors.red
-                  : Colors.white, // Červená pro starší termíny
+                  : Theme.of(
+                    context,
+                  ).colorScheme.primary, // Červená pro starší termíny
         ),
       ),
       trailing:

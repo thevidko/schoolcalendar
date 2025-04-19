@@ -11,6 +11,16 @@ class SubjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context); // Získáme aktuální téma
+    final colorScheme = theme.colorScheme;
+
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    final cardColor =
+        isDarkMode
+            ? colorScheme.surfaceContainerLow
+            : colorScheme.onInverseSurface;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -24,10 +34,14 @@ class SubjectCard extends StatelessWidget {
       },
       child: Card(
         elevation: 10,
-        //color: Color(0xFFFFF8F8),
-        //color: Color.fromARGB(255, 59, 59, 59),
+        color: cardColor,
+        shadowColor: theme.shadowColor,
+        borderOnForeground: true,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Theme.of(context).primaryColor),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -35,16 +49,20 @@ class SubjectCard extends StatelessWidget {
             children: [
               Text(
                 '${subject.name} (${subject.code})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 8),
               if (tasks.isEmpty)
-                const Text(
+                Text(
                   'Žádné nadcházející termíny.',
-                  style: TextStyle(fontSize: 14),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 )
               else
                 Column(

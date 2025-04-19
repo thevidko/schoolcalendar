@@ -43,7 +43,6 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  // Metody pro aktualizaci jednotlivých nastavení
   Future<void> setNotifyOneHour(bool value) async {
     if (_notifyOneHourBefore == value) return;
     _notifyOneHourBefore = value;

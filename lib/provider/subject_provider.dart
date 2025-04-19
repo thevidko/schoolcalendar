@@ -49,16 +49,3 @@ class SubjectProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
-
-extension SubjectProviderActions on SubjectProvider {
-  Future<void> deleteSubject(dynamic subjectId, BuildContext context) async {
-    // Zde implementujte logiku smazání předmětu v repository/DB
-    // např. await _subjectRepository.deleteSubjectById(subjectId);
-    print('Deleting subject with ID: $subjectId');
-    await Future.delayed(Duration(seconds: 1)); // Simulace
-    // Po smazání resetujte selectedSubject a notifikujte
-    _selectedSubject = null;
-    notifyListeners();
-    // Návrat zpět není potřeba řešit zde, řeší se v UI po await
-  }
-}

@@ -1,11 +1,10 @@
 import 'package:drift/drift.dart' as db;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:schoolcalendar/data/db/database.dart';
 import 'package:schoolcalendar/provider/task_provider.dart';
-import 'package:schoolcalendar/repository/task_repository.dart';
 import 'package:schoolcalendar/repository/subject_repository.dart';
+import 'package:schoolcalendar/utils/date_formatter.dart';
 
 class AddTaskScreen extends StatefulWidget {
   final int? subjectId;
@@ -57,7 +56,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       );
 
       if (pickedTime != null) {
-        // Kombinujeme vybrané datum a čas
         setState(() {
           _dueDate = DateTime(
             pickedDate.year,
@@ -66,7 +64,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             pickedTime.hour,
             pickedTime.minute,
           );
-          formattedDate = DateFormat('dd.MM.yyyy HH:mm').format(_dueDate!);
+          formattedDate = DateFormatter.formatCzechDateTime(_dueDate!);
         });
       }
     }
@@ -128,7 +126,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       child: Text(
                         _dueDate == null
                             ? "Vybrat datum"
-                            : "Datum: ${formattedDate}", //TODO České datum
+                            : "Datum: ${formattedDate}",
                       ),
                     ),
                   ),
